@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-node
+  labels:
+    app.kubernetes.io/name: hello-node
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hello-node
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hello-node
+    spec:
+      containers:
+        - name: hello-node
+          image: hello-node:1.4
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: STARTUP_DELAY_SECONDS
+              value: "5"
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hello-node-secret
+                  key: API_TOKEN
+          envFrom:
+            - configMapRef:
+                name: hello-node-env
+          volumeMounts:
+            - name: settings
+              mountPath: /etc/hello-node
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: settings
+          configMap:
+            name: hello-node-settings

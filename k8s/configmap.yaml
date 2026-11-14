@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-node-env
+  labels:
+    app.kubernetes.io/name: hello-node
+data:
+  APP_MESSAGE: "Hello from practice!"
+  LOG_LEVEL: "info"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-node-settings
+  labels:
+    app.kubernetes.io/name: hello-node
+data:
+  settings.json: |
+    {
+      "featureFlags": {
+        "newDashboard": false
+      }
+    }
