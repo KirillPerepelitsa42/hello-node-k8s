@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: hello-node
-          image: hello-node:1.4
+          image: hello-node:2.0
           imagePullPolicy: Never
           ports:
             - name: http

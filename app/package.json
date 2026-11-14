@@ -1,0 +1,13 @@
+{
+  "name": "hello-node",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Minimal Node.js HTTP server for practicing Kubernetes and Helm",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
