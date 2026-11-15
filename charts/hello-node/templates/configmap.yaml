@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hello-node.fullname" . }}-env
+  labels:
+    {{- include "hello-node.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hello-node.fullname" . }}-settings
+  labels:
+    {{- include "hello-node.labels" . | nindent 4 }}
+data:
+  settings.json: |
+    {{- .Values.settings | toPrettyJson | nindent 4 }}

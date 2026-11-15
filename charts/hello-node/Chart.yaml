@@ -1,0 +1,10 @@
+apiVersion: v2
+name: hello-node
+description: Учебное Node.js-приложение hello-node
+type: application
+
+# Версия самого чарта: меняется при любой правке шаблонов или values.yaml.
+version: 0.1.0
+
+# Версия приложения: по умолчанию из неё берётся тег образа.
+appVersion: "2.0"

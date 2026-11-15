@@ -1,0 +1,60 @@
+replicaCount: 3
+
+image:
+  repository: hello-node
+  # Образ собран внутри minikube, в реестре его нет.
+  pullPolicy: Never
+  # Пусто: тег берётся из appVersion в Chart.yaml.
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Порт, который слушает приложение внутри контейнера.
+containerPort: 3000
+
+service:
+  type: ClusterIP
+  port: 80
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Переменные окружения приложения. Попадают в ConfigMap и подключаются через envFrom.
+env:
+  APP_MESSAGE: "Hello from Helm!!!"
+  LOG_LEVEL: "info"
+  STARTUP_DELAY_SECONDS: "5"
+
+# Содержимое файла /etc/hello-node/settings.json.
+settings:
+  featureFlags:
+    newDashboard: false
+
+# Secret создаётся вне чарта, чарт только ссылается на него.
+existingSecret: hello-node-secret
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  periodSeconds: 5
+  failureThreshold: 2
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
