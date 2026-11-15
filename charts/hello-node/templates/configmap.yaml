@@ -12,9 +12,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "hello-node.fullname" . }}-settings
+  name: {{ include "hello-node.fullname" . }}-config
   labels:
     {{- include "hello-node.labels" . | nindent 4 }}
 data:
-  settings.json: |
-    {{- .Values.settings | toPrettyJson | nindent 4 }}
+  pre-config.yaml: |
+    {{- .Values.preConfig | trim | nindent 4 }}

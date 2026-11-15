@@ -2,8 +2,11 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Внешних зависимостей нет, поэтому npm install не нужен.
-COPY package.json server.js ./
+# Сначала только манифесты зависимостей: этот слой пересобирается, лишь когда они меняются.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server.js ./
 
 # Не запускаем приложение от root.
 USER node

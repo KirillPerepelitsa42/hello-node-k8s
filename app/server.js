@@ -1,17 +1,28 @@
 const http = require('node:http');
 const os = require('node:os');
 const fs = require('node:fs');
+const { parse } = require('yaml');
 
+// Порт остаётся переменной окружения: это настройка контейнера, а не приложения.
 const PORT = Number(process.env.PORT) || 3000;
-const MESSAGE = process.env.APP_MESSAGE || 'Hello from Kubernetes!';
-const STARTUP_DELAY_SECONDS = Number(process.env.STARTUP_DELAY_SECONDS) || 0;
-
-// Конфигурация из переменных окружения: читается один раз при старте процесса.
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const API_TOKEN = process.env.API_TOKEN || '';
+// Конфигурация приложения — файл. В кластере его собирает init-контейнер перед стартом.
+const CONFIG_FILE = process.env.CONFIG_FILE || '/app/config.yaml';
 const STARTED_AT = new Date().toISOString();
-// Файл настроек, наоборот, читается при каждом запросе к /debug/config.
-const SETTINGS_FILE = process.env.SETTINGS_FILE || '/etc/hello-node/settings.json';
+
+// Читаем конфиг один раз при старте. Нет файла или он битый — падаем сразу:
+// под уйдёт в CrashLoopBackOff, и проблема будет видна, а не спрятана.
+const loadConfig = () => {
+  try {
+    return parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  } catch (error) {
+    console.error(`Cannot load config from ${CONFIG_FILE}: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+const config = loadConfig();
+const MESSAGE = config.app?.message || 'Hello from Kubernetes!';
+const STARTUP_DELAY_SECONDS = Number(config.app?.startupDelaySeconds) || 0;
 
 // Состояние для проб. Отдельные флаги нужны, чтобы вручную проверить поведение кластера.
 let ready = false;
@@ -29,34 +40,16 @@ const sendJson = (res, status, body) => {
 };
 
 // Секрет целиком не показываем: только начало и длину, чтобы было видно, что он пришёл.
-const maskSecret = (value) => (value ? `${value.slice(0, 2)}*** (${value.length} chars)` : null);
-
-// Читает файл настроек заново на каждый вызов, чтобы было видно, когда kubelet его обновит.
-const readSettingsFile = () => {
-  try {
-    const stat = fs.statSync(SETTINGS_FILE);
-    const raw = fs.readFileSync(SETTINGS_FILE, 'utf8');
-    let content;
-    try {
-      content = JSON.parse(raw);
-    } catch {
-      content = raw;
-    }
-    return { path: SETTINGS_FILE, modifiedAt: stat.mtime.toISOString(), content };
-  } catch (error) {
-    return { path: SETTINGS_FILE, error: error.code || error.message };
-  }
-};
+const maskSecret = (value) => (value ? `${String(value).slice(0, 2)}*** (${String(value).length} chars)` : null);
 
 const configReport = () => ({
   hostname: os.hostname(),
   startedAt: STARTED_AT,
-  fromEnv: {
-    APP_MESSAGE: MESSAGE,
-    LOG_LEVEL,
-    API_TOKEN: maskSecret(API_TOKEN),
+  configFile: CONFIG_FILE,
+  config: {
+    ...config,
+    auth: { ...config.auth, apiToken: maskSecret(config.auth?.apiToken) },
   },
-  fromFile: readSettingsFile(),
 });
 
 const server = http.createServer((req, res) => {
@@ -94,7 +87,7 @@ const server = http.createServer((req, res) => {
       healthy = false;
       return sendJson(res, 200, { hostname: os.hostname(), healthy });
 
-    // Конфигурация: что пришло из env при старте и что сейчас лежит в файле.
+    // Конфигурация, с которой стартовал процесс.
     case '/debug/config':
       return sendJson(res, 200, configReport());
     default:

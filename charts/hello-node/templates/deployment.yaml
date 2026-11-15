@@ -21,6 +21,32 @@ spec:
       labels:
         {{- include "hello-node.labels" . | nindent 8 }}
     spec:
+      # Собирает config.yaml до старта приложения: подставляет значения в шаблон.
+      initContainers:
+        - name: render-config
+          image: {{ .Values.envsubst.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              : "${API_TOKEN:?API_TOKEN is not set}"
+              envsubst < /templates/pre-config.yaml > /config/config.yaml
+          env:
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: API_TOKEN
+          envFrom:
+            - configMapRef:
+                name: {{ include "hello-node.fullname" . }}-env
+          volumeMounts:
+            - name: pre-config
+              mountPath: /templates
+              readOnly: true
+            - name: config
+              mountPath: /config
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -31,17 +57,11 @@ spec:
           env:
             - name: PORT
               value: {{ .Values.containerPort | quote }}
-            - name: API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.existingSecret }}
-                  key: API_TOKEN
-          envFrom:
-            - configMapRef:
-                name: {{ include "hello-node.fullname" . }}-env
           volumeMounts:
-            - name: settings
-              mountPath: /etc/hello-node
+            # Один файл поверх папки /app: без subPath том закрыл бы весь код приложения.
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
               readOnly: true
           {{- with .Values.readinessProbe }}
           readinessProbe:
@@ -56,6 +76,10 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
       volumes:
-        - name: settings
+        # Шаблон конфига из ConfigMap.
+        - name: pre-config
           configMap:
-            name: {{ include "hello-node.fullname" . }}-settings
+            name: {{ include "hello-node.fullname" . }}-config
+        # Пустая папка, общая для init-контейнера и приложения. Живёт, пока жив под.
+        - name: config
+          emptyDir: {}

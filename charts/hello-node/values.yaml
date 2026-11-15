@@ -23,19 +23,31 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
-# Переменные окружения приложения. Попадают в ConfigMap и подключаются через envFrom.
+# Значения для подстановки в шаблон конфига. Попадают в ConfigMap,
+# init-контейнер получает их как переменные окружения.
 env:
   APP_MESSAGE: "Hello from Helm!!!"
   LOG_LEVEL: "info"
   STARTUP_DELAY_SECONDS: "5"
 
-# Содержимое файла /etc/hello-node/settings.json.
-settings:
+# Шаблон config.yaml приложения. Init-контейнер заменяет ${ИМЯ} на значения
+# переменных окружения: из env выше и из Secret.
+preConfig: |
+  app:
+    message: "${APP_MESSAGE}"
+    logLevel: ${LOG_LEVEL}
+    startupDelaySeconds: ${STARTUP_DELAY_SECONDS}
+  auth:
+    apiToken: "${API_TOKEN}"
   featureFlags:
     newDashboard: false
 
 # Secret создаётся вне чарта, чарт только ссылается на него.
 existingSecret: hello-node-secret
+
+# Образ init-контейнера с утилитой envsubst.
+envsubst:
+  image: bhgedigital/envsubst:v1.0-alpine3.6
 
 readinessProbe:
   httpGet:
