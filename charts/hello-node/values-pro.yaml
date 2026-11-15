@@ -1,0 +1,15 @@
+# Окружение pro. Здесь только отличия от values.yaml.
+
+replicaCount: 3
+
+env:
+  APP_MESSAGE: "Hello from production"
+  LOG_LEVEL: "warn"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

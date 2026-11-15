@@ -1,0 +1,16 @@
+# Окружение dev. Здесь только отличия от values.yaml: Helm сливает словари,
+# поэтому ключи, которых нет в этом файле, берутся из values.yaml.
+
+replicaCount: 1
+
+env:
+  APP_MESSAGE: "Hello from dev"
+  LOG_LEVEL: "debug"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
