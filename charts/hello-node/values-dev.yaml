@@ -14,3 +14,7 @@ resources:
   limits:
     cpu: 100m
     memory: 128Mi
+
+# Свой хост у каждого стенда: hello-node.<namespace>.localhost.
+ingress:
+  enabled: true

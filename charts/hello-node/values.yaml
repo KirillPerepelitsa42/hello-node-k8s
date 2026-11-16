@@ -17,6 +17,15 @@ service:
   type: ClusterIP
   port: 80
 
+ingress:
+  enabled: false
+  className: nginx
+  # Пусто: хост собирается как <имя>.<namespace>.<domain>, например hello-node.ipr-dev.localhost.
+  host: ""
+  # Любой *.localhost браузер и curl сами отправляют на 127.0.0.1, правка /etc/hosts не нужна.
+  domain: localhost
+  annotations: {}
+
 strategy:
   type: RollingUpdate
   rollingUpdate:

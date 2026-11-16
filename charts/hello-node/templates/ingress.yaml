@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled }}
+{{- /* Хост: явный из values или "<имя>.<namespace>.<домен>", чтобы у каждого стенда был свой. */}}
+{{- $host := .Values.ingress.host | default (printf "%s.%s.%s" (include "hello-node.name" .) .Release.Namespace .Values.ingress.domain) }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "hello-node.fullname" . }}
+  labels:
+    {{- include "hello-node.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "hello-node.fullname" . }}
+                port:
+                  name: http
+{{- end }}

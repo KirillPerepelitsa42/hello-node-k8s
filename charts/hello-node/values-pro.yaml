@@ -13,3 +13,8 @@ resources:
   limits:
     cpu: 500m
     memory: 256Mi
+
+# У прода фиксированный хост, не зависящий от namespace.
+ingress:
+  enabled: true
+  host: hello-node.localhost
